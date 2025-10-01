@@ -9,7 +9,7 @@
 #include <iostream>
 
 
-extern "C" void __log_instr(uint64_t id, uint64_t value, const char* func, const char* bb);
+extern "C" void __log_instr(const char* instr, uint64_t value, const char* func, const char* bb);
 
 
 static std::ofstream g_log;
@@ -29,10 +29,10 @@ if (g_log.is_open()) g_log.close();
 } _initLogger;
 
 
-extern "C" void __log_instr(uint64_t id, uint64_t value, const char* func, const char* bb) {
+extern "C" void __log_instr(const char* instr, uint64_t value, const char* func, const char* bb) {
 std::lock_guard<std::mutex> lk(g_mutex);
 if (g_log.is_open()) {
-g_log << "[" << func << ":" << bb << "] id=" << id << " val=" << value << "\n";
+g_log << "[" << func << ":" << bb << "] instr=" << instr << " val=" << value << "\n";
 g_log.flush();
 }
 }

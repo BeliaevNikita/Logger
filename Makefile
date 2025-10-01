@@ -30,5 +30,4 @@ cfg_visual:
 	dot -Tpng cfg.dot -o cfg.png
 
 clean:
-
-	rm -f libinstrument.so logger_runtime.o *.dot *.ll *.png
+	rm -f libinstrument.so logger_runtime.o *.dot *.ll *.png log.txt

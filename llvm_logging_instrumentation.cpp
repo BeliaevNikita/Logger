@@ -40,7 +40,7 @@ struct InstrumentPass : public PassInfoMixin<InstrumentPass> {
         FunctionCallee LogFunc = M.getOrInsertFunction(
             "__log_instr",
             FunctionType::get(Type::getVoidTy(Ctx),
-                              {Type::getInt32Ty(Ctx),
+                              {Type::getInt8PtrTy(Ctx),
                                Type::getInt64Ty(Ctx),
                                Type::getInt8PtrTy(Ctx),
                                Type::getInt8PtrTy(Ctx)},
@@ -112,6 +112,12 @@ struct InstrumentPass : public PassInfoMixin<InstrumentPass> {
                     else
                         Builder.SetInsertPoint(&BB); // конец блока
 
+                    // Текст инструкции
+                    std::string InstrStr;
+                    raw_string_ostream RSO(InstrStr);
+                    I.print(RSO);
+                    RSO.flush();
+                    Value *InstrName = Builder.CreateGlobalStringPtr(InstrStr);
                     // ID инструкции
                     Value *Id = Builder.getInt32(reinterpret_cast<uintptr_t>(&I) & 0xFFFFFFFF);
 
@@ -127,7 +133,7 @@ struct InstrumentPass : public PassInfoMixin<InstrumentPass> {
                     Value *FuncName = Builder.CreateGlobalStringPtr(F.getName());
                     Value *BBName   = Builder.CreateGlobalStringPtr(BB.getName());
 
-                    Builder.CreateCall(LogFunc, {Id, Val, FuncName, BBName});
+                    Builder.CreateCall(LogFunc, {InstrName, Val, FuncName, BBName});
                 }
             }
         }
