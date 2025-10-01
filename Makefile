@@ -4,7 +4,7 @@ CXXFLAGS := -fPIC -std=c++17 `$(LLVM_CONFIG) --cxxflags`
 LDFLAGS := -shared `$(LLVM_CONFIG) --ldflags --libs core` -Wl,-z,relro
 
 
-all: libinstrument.so logger_runtime.o
+all: libinstrument.so logger_runtime.o llvm pass run def_visual
 
 
 libinstrument.so: llvm_logging_instrumentation.cpp
@@ -30,4 +30,5 @@ cfg_visual:
 	dot -Tpng cfg.dot -o cfg.png
 
 clean:
+
 	rm -f libinstrument.so logger_runtime.o *.dot *.ll *.png
