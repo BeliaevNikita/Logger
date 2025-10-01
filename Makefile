@@ -29,5 +29,11 @@ def_visual:
 cfg_visual:
 	dot -Tpng cfg.dot -o cfg.png
 
+graph:
+	dot -Tpng cfg_with_vals.dot -o cfg_with_vals.png
+
+full_graph:
+	dot -Tpng cfg_with_vals.dot -o cfg_with_vals.png
+	
 clean:
 	rm -f libinstrument.so logger_runtime.o *.dot *.ll *.png log.txt

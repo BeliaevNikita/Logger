@@ -78,17 +78,59 @@ struct InstrumentPass : public PassInfoMixin<InstrumentPass> {
         }
         DefUseFile << "}\n";
 
-        // CFG граф
+        // CFG
         raw_fd_ostream CFGFile("cfg.dot", EC, sys::fs::OF_Text);
-        CFGFile << "digraph CFG {\n";
+        CFGFile << "digraph InstrCFG {\n";
+
         for (Function &F : M) {
             if (F.isDeclaration()) continue;
+
+            // Для ссылок: первая инструкция блока
+            std::unordered_map<BasicBlock*, Instruction*> FirstInstr;
             for (BasicBlock &BB : F) {
-                for (auto *Succ : successors(&BB)) {
-                    CFGFile << "  \"" << BB.getName() << "\" -> \"" << Succ->getName() << "\";\n";
+                if (!BB.empty())
+                    FirstInstr[&BB] = &*BB.begin();
+            }
+
+            for (BasicBlock &BB : F) {
+                Instruction *Prev = nullptr;
+                for (Instruction &I : BB) {
+                    std::string InstrLabel = getInstrLabel(&I);
+                    CFGFile << "  \"" << &I << "\" [label=\"" << InstrLabel << "\"];\n";
+
+                    if (Prev) {
+                        CFGFile << "  \"" << Prev << "\" -> \"" << &I << "\";\n";
+                    }
+                    Prev = &I;
+                }
+
+                // переходы из последней инструкции
+                if (!BB.empty()) {
+                    Instruction *Last = BB.getTerminator();
+                    if (auto *Br = dyn_cast<BranchInst>(Last)) {
+                        for (unsigned i = 0; i < Br->getNumSuccessors(); i++) {
+                            BasicBlock *Succ = Br->getSuccessor(i);
+                            if (FirstInstr.count(Succ)) {
+                                CFGFile << "  \"" << Last << "\" -> \"" << FirstInstr[Succ] << "\";\n";
+                            }
+                        }
+                    } else if (auto *Sw = dyn_cast<SwitchInst>(Last)) {
+                        for (auto &Case : Sw->cases()) {
+                            BasicBlock *Succ = Case.getCaseSuccessor();
+                            if (FirstInstr.count(Succ)) {
+                                CFGFile << "  \"" << Last << "\" -> \"" << FirstInstr[Succ] << "\";\n";
+                            }
+                        }
+                        // default
+                        BasicBlock *Def = Sw->getDefaultDest();
+                        if (FirstInstr.count(Def)) {
+                            CFGFile << "  \"" << Last << "\" -> \"" << FirstInstr[Def] << "\";\n";
+                        }
+                    }
                 }
             }
         }
+
         CFGFile << "}\n";
 
         // Инструментирование
@@ -103,6 +145,8 @@ struct InstrumentPass : public PassInfoMixin<InstrumentPass> {
                         continue;
 
                     if (I.getType()->isVoidTy())
+                        continue;
+                    if (isa<SExtInst>(&I))
                         continue;
 
                     Instruction *Next = I.getNextNode();

@@ -32,7 +32,7 @@ if (g_log.is_open()) g_log.close();
 extern "C" void __log_instr(const char* instr, uint64_t value, const char* func, const char* bb) {
 std::lock_guard<std::mutex> lk(g_mutex);
 if (g_log.is_open()) {
-g_log << "[" << func << ":" << bb << "] instr=" << instr << " val=" << value << "\n";
+g_log << "[" << func << ":" << bb << "] " << instr << " val=" << value << "\n";
 g_log.flush();
 }
 }
